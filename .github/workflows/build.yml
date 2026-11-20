@@ -1,5 +1,4 @@
-
-      name: AUTO DOCTOR PRO APK Build
+name: AUTO DOCTOR PRO APK Build
 
 on:
   push:

@@ -1,11 +1,11 @@
-
-        name: AUTO DOCTOR PRO APK BUILD
+name: AUTO DOCTOR PRO APK BUILD
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+
 jobs:
   build:
     name: Build AUTO DOCTOR PRO

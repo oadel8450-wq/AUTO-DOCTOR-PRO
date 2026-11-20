@@ -1,3 +1,4 @@
+
 name: AUTO DOCTOR PRO APK Build
 
 on:
@@ -59,68 +60,34 @@ jobs:
             gettext \
             ccache
 
-      # 5. Fix Android SDK Command Line Tools
-      - name: Setup Android SDK Manager
-        run: |
-          set -e
-
-          mkdir -p "$ANDROID_SDK_ROOT/tools"
-          mkdir -p "$HOME/.android"
-
-          touch "$HOME/.android/repositories.cfg"
-
-          CMDLINE_DIR="$ANDROID_SDK_ROOT/cmdline-tools/latest"
-
-          if [ ! -d "$CMDLINE_DIR" ]; then
-            echo "Searching Android Command Line Tools..."
-
-            CMDLINE_DIR=$(find \
-              "$ANDROID_SDK_ROOT/cmdline-tools" \
-              -mindepth 1 -maxdepth 1 \
-              -type d | head -n 1)
-          fi
-
-          if [ -z "$CMDLINE_DIR" ] || [ ! -d "$CMDLINE_DIR" ]; then
-            echo "ERROR: Android Command Line Tools not found"
-            exit 1
-          fi
-
-          # Copy the COMPLETE directory.
-          # Do not copy sdkmanager alone.
-          cp -a "$CMDLINE_DIR/." "$ANDROID_SDK_ROOT/tools/"
-
-          # Verify SDK Manager
-          test -f "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
-
-          chmod +x "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
-
-          echo "$ANDROID_SDK_ROOT/tools/bin" >> "$GITHUB_PATH"
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
-
-          "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" --version
-
-      # 6. Accept Android Licenses
+      # 5. Accept Android SDK Licenses
       - name: Accept Android SDK Licenses
         run: |
-          yes | "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" \
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          test -f "$SDKMANAGER"
+
+          yes | "$SDKMANAGER" \
             --sdk_root="$ANDROID_SDK_ROOT" \
             --licenses || true
 
-      # 7. Install Android SDK Packages
+      # 6. Install Android SDK Packages
       - name: Install Android SDK Packages
         run: |
-          "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" \
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          "$SDKMANAGER" \
             --sdk_root="$ANDROID_SDK_ROOT" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
             "ndk;27.2.12479018"
 
-          yes | "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" \
+          yes | "$SDKMANAGER" \
             --sdk_root="$ANDROID_SDK_ROOT" \
             --licenses || true
 
-      # 8. Install Buildozer
+      # 7. Install Buildozer
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip setuptools wheel
@@ -129,7 +96,7 @@ jobs:
             "Cython==0.29.33" \
             buildozer
 
-      # 9. Verify Project Files
+      # 8. Verify Project Files
       - name: Check Project Files
         run: |
           test -f main.py
@@ -141,21 +108,21 @@ jobs:
             '^(title|package.name|package.domain|requirements|android.api|android.ndk|android.archs|android.accept_sdk_license)[[:space:]]*=' \
             buildozer.spec || true
 
-      # 10. Build APK
+      # 9. Build APK
       - name: Build AUTO DOCTOR PRO APK
         env:
           ANDROID_ACCEPT_SDK_LICENSE: "1"
         run: |
           yes | buildozer -v android debug
 
-      # 11. Verify APK
+      # 10. Verify APK
       - name: Verify APK
         run: |
           ls -lh bin/*.apk
 
           test -n "$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
 
-      # 12. Upload APK
+      # 11. Upload APK
       - name: Upload AUTO DOCTOR PRO APK
         uses: actions/upload-artifact@v4
         with:

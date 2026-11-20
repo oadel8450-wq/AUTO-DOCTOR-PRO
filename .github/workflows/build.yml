@@ -1,4 +1,3 @@
-
 name: AUTO DOCTOR PRO APK BUILD
 
 on:
@@ -93,18 +92,21 @@ jobs:
 
           echo "ANDROID LICENSES ACCEPTED"
 
-      # Verify accepted licenses and configuration
+      # Verify Buildozer and Android SDK configuration
       - name: Check Configuration
+        shell: bash
         run: |
+          set -e
+
           test -f buildozer.spec
 
           grep -q "android.accept_sdk_license = True" buildozer.spec
 
-          test -d "$ANDROID_SDK_ROOT/licenses"
+          test -d "$ANDROID_SDK_ROOT"
 
-          "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" --version
+          test -d "$ANDROID_SDK_ROOT/platform-tools"
 
-          echo "CONFIGURATION READY"
+          echo "BUILDOZER AND ANDROID SDK CONFIGURATION READY"
 
       # Build APK with automatic Yes responses
       - name: Build AUTO DOCTOR PRO

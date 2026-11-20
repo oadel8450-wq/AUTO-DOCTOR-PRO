@@ -1,5 +1,4 @@
-
-ححح#name: AUTO DOCTOR PRO APK BUILD
+#name: AUTO DOCTOR PRO APK BUILD
 
 on:
   workflow_dispatch:

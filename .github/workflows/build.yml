@@ -1,56 +1,124 @@
-name: AUTO DOCTOR PRO APK Build
+
+name: AUTO DOCTOR PRO APK BUILD
 
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
+  ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+  ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-22.04
-    timeout-minutes: 120
+    timeout-minutes: 360
 
     steps:
-      - name: Checkout project
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      - name: Set up Python 3.10
+      - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
-      - name: Install system dependencies
+      - name: Install Linux Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git zip unzip \
             build-essential \
-            autoconf automake libtool pkg-config \
-            zlib1g-dev libncurses5-dev libffi-dev libssl-dev \
-            cmake
+            autoconf automake \
+            libtool libltdl-dev \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo6 \
+            cmake \
+            libffi-dev \
+            libssl-dev
 
-      - name: Install Buildozer and Cython
+      - name: Install Android SDK Tools
+        uses: android-actions/setup-android@v4
+
+      - name: Prepare Buildozer SDK
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade buildozer "cython==0.29.33"
+          mkdir -p "$ANDROID_SDK_ROOT/tools"
+          mkdir -p "$HOME/.android"
 
-      - name: Accept Android SDK licenses
-        run: echo "ANDROID_ACCEPT_SDK_LICENSE=1" >> "$GITHUB_ENV"
+          touch "$HOME/.android/repositories.cfg"
 
-      - name: Build AUTO DOCTOR PRO APK
-        run: buildozer -v android debug
+          SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" \
+            -type f -name sdkmanager | head -n 1)
 
-      - name: Upload APK artifact
+          if [ -z "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager not found"
+            exit 1
+          fi
+
+          CMDLINE_DIR=$(dirname "$(dirname "$SDKMANAGER")")
+
+          cp -a "$CMDLINE_DIR/." "$ANDROID_SDK_ROOT/tools/"
+
+          test -f "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
+
+          echo "SDK READY"
+
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install Cython==0.29.33
+          pip install buildozer
+
+      # Automatically accept ALL Android licenses
+      - name: Accept Android Licenses
+        shell: bash
+        run: |
+          set +o pipefail
+
+          yes | "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" \
+            --sdk_root="$ANDROID_SDK_ROOT" \
+            --licenses
+
+          echo "ANDROID LICENSES ACCEPTED"
+
+      # Verify accepted licenses and configuration
+      - name: Check Configuration
+        run: |
+          test -f buildozer.spec
+
+          grep -q "android.accept_sdk_license = True" buildozer.spec
+
+          test -d "$ANDROID_SDK_ROOT/licenses"
+
+          "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" --version
+
+          echo "CONFIGURATION READY"
+
+      # Build APK with automatic Yes responses
+      - name: Build AUTO DOCTOR PRO
+        shell: bash
+        run: |
+          set +o pipefail
+
+          yes | buildozer -v android debug
+
+      # Upload APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AUTO-DOCTOR-PRO-APK
           path: bin/*.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30

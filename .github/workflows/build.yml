@@ -1,6 +1,5 @@
 
-  
-name: AUTO DOCTOR PRO APK BUILD
+      name: AUTO DOCTOR PRO APK BUILD
 
 on:
   workflow_dispatch:
@@ -34,6 +33,9 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install System Dependencies
         run: |
           sudo apt-get update
@@ -50,10 +52,7 @@ jobs:
         run: |
           mkdir -p "$ANDROID_SDK_ROOT"
 
-          SDKMANAGER=$(find \
-            "$ANDROID_SDK_ROOT/cmdline-tools" \
-            -type f -name sdkmanager \
-            | head -n 1)
+          SDKMANAGER=$(command -v sdkmanager)
 
           if [ -z "$SDKMANAGER" ]; then
             echo "Android SDK Manager not found"
@@ -61,6 +60,17 @@ jobs:
           fi
 
           echo "SDK Manager: $SDKMANAGER"
+
+          CMDLINE_DIR=$(dirname "$(dirname "$SDKMANAGER")")
+
+          echo "Command Line Tools: $CMDLINE_DIR"
+
+          mkdir -p "$ANDROID_SDK_ROOT/tools"
+
+          cp -a "$CMDLINE_DIR/." \
+            "$ANDROID_SDK_ROOT/tools/"
+
+          test -f "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
 
           yes | "$SDKMANAGER" \
             --sdk_root="$ANDROID_SDK_ROOT" \
@@ -77,8 +87,8 @@ jobs:
             --sdk_root="$ANDROID_SDK_ROOT" \
             --licenses || true
 
-          echo "ANDROIDNDK=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
           echo "ANDROIDSDK=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROIDNDK=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
 
       - name: Install Buildozer
@@ -87,16 +97,20 @@ jobs:
           pip install buildozer
           pip install Cython==0.29.33
 
-      - name: Verify Android Tools
+      - name: Verify Android Configuration
         run: |
           echo "Checking Android SDK..."
+
           test -d "$ANDROID_SDK_ROOT/platforms/android-33"
           test -d "$ANDROID_SDK_ROOT/build-tools/33.0.2"
           test -d "$ANDROID_SDK_ROOT/ndk/25.2.9519653"
 
+          test -f "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
+
           java -version
           python --version
           buildozer --version
+          cython --version
 
       - name: Build AUTO DOCTOR PRO APK
         run: |
@@ -110,3 +124,4 @@ jobs:
           path: bin/*.apk
           if-no-files-found: error
           retention-days: 30
+

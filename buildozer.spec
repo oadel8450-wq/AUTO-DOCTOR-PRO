@@ -1,4 +1,3 @@
-
 [app]
 
 title = AUTO DOCTOR PRO
@@ -21,6 +20,9 @@ android.api = 33
 android.minapi = 23
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
+
+# Python-for-Android
+p4a.branch = master
 
 # Android permissions
 android.permissions = INTERNET, ACCESS_NETWORK_STATE, BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_SCAN, BLUETOOTH_CONNECT, BLUETOOTH_ADVERTISE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION

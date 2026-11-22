@@ -1,3 +1,4 @@
+
 [app]
 
 title = AUTO DOCTOR PRO
@@ -18,7 +19,11 @@ fullscreen = 0
 # Android SDK
 android.api = 33
 android.minapi = 23
+
+# Android NDK
 android.ndk = 25b
+
+# Android architectures
 android.archs = arm64-v8a, armeabi-v7a
 
 # Python-for-Android
@@ -35,8 +40,8 @@ android.allow_backup = True
 android.private_storage = True
 android.wakelock = True
 
-# Build optimization
-android.skip_update = False
+# SDK update settings
+android.skip_update = True
 
 [buildozer]
 

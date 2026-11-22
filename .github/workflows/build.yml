@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 360
 
+    env:
+      ANDROID_NDK_VERSION: 25.2.9519653
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -24,17 +27,11 @@ jobs:
             python3-pip \
             python3-venv \
             build-essential \
-            autoconf \
-            automake \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo6 \
-            cmake \
-            libffi-dev \
-            libssl-dev
+            autoconf automake libtool \
+            pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev \
+            libtinfo6 cmake \
+            libffi-dev libssl-dev
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -50,6 +47,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
+      - name: Configure Android SDK and NDK Paths
+        run: |
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION" >> $GITHUB_ENV
+          echo "ANDROIDNDK=$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION" >> $GITHUB_ENV
+
       - name: Accept Android Licenses
         run: |
           yes | sdkmanager --licenses || true
@@ -59,20 +64,17 @@ jobs:
           sdkmanager \
             "platform-tools" \
             "platforms;android-33" \
-            "build-tools;35.0.0" \
-            "ndk;25.2.9519653"
+            "build-tools;33.0.2"
 
-      - name: Configure Android NDK
+      - name: Pre-Install Android NDK 25
         run: |
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
-          echo "ANDROIDNDK=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
+          sdkmanager "ndk;$ANDROID_NDK_VERSION"
 
-      - name: Verify Android NDK
-        run: |
-          test -f "$ANDROID_SDK_ROOT/ndk/25.2.9519653/source.properties"
-          cat "$ANDROID_SDK_ROOT/ndk/25.2.9519653/source.properties"
+          test -f "$ANDROID_NDK_ROOT/source.properties"
+
+          cat "$ANDROID_NDK_ROOT/source.properties"
+
+          echo "NDK 25 INSTALLED SUCCESSFULLY"
 
       - name: Install Buildozer
         run: |
@@ -85,8 +87,32 @@ jobs:
           python --version
           java -version
           buildozer --version
-          echo "NDK VERSION:"
-          ls "$ANDROID_NDK_HOME"
+
+          echo "ANDROID SDK:"
+          ls "$ANDROID_SDK_ROOT"
+
+          echo "ANDROID BUILD TOOLS:"
+          ls "$ANDROID_SDK_ROOT/build-tools/33.0.2"
+
+          echo "ANDROID NDK:"
+          ls "$ANDROID_NDK_ROOT"
+
+      - name: Preinstall and Link NDK 25 for Buildozer
+        run: |
+          mkdir -p "$HOME/.buildozer/android/platform"
+
+          rm -rf "$HOME/.buildozer/android/platform/android-ndk-r25b"
+
+          ln -s "$ANDROID_NDK_ROOT" \
+          "$HOME/.buildozer/android/platform/android-ndk-r25b"
+
+          echo "BUILDOZER NDK LINK CREATED"
+
+          ls -la "$HOME/.buildozer/android/platform/"
+
+          test -f "$HOME/.buildozer/android/platform/android-ndk-r25b/source.properties"
+
+          echo "NDK READY FOR BUILDOZER"
 
       - name: Build AUTO DOCTOR PRO APK
         run: |
@@ -100,3 +126,7 @@ jobs:
           path: bin/*.apk
           if-no-files-found: warn
           retention-days: 14
+
+
+
+ 
